@@ -25,31 +25,6 @@ def flip_board(board):
         return board.mirror()
 
 
-
-def test_flip(name, fen):
-    print("\n============================")
-    print("TEST:", name)
-    print("Original:", fen)
-
-    board = chess.Board(fen)
-    flipped = flip_board(board)
-
-    print("Flipped:", flipped.fen())
-
-    # Print details
-    print("Original turn:", board.turn)
-    print("Flipped turn :", flipped.turn)
-
-    print("Original castling:", board.castling_xfen())
-    print("Flipped castling :", flipped.castling_xfen())
-
-    print("Original ep:", board.ep_square)
-    print("Flipped ep :", flipped.ep_square)
-
-    print("============================")
-
-test_flip("White KS only", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3K2R b K - 3 5")
-
 # =======================================================================
 # Mish Activation
 # =======================================================================
@@ -203,30 +178,22 @@ class ChessFormerInputTokenizer:
 class PolicyHead(nn.Module):
     def __init__(self, d_model):
         super().__init__()
-
-        # One big vector produces all 4096 move logits
         self.move_head = nn.Linear(64 * d_model, 64 * 64)
         self.promo_head = nn.Linear(d_model, 4)
 
     def forward(self, enc):
-        B = enc.shape[0]
-        D = enc.shape[2]
+        B, _, D = enc.shape
 
-        # Flatten 64 tokens → one vector per position
+        # Flatten for move head (B, 64*d)
         enc_flat = enc.reshape(B, 64 * D)
 
-        # ---- Move logits ----
-        move_logits = self.move_head(enc_flat)      # (B,4096)
-        move_logits = move_logits.view(B, 64, 64)   # (B,64,64)
+        # Move logits (B,4096)
+        move_logits = self.move_head(enc_flat)
 
-        # ---- Promotion logits ----
-        promo_logits = self.promo_head(enc)         # (B,64,4)
+        # Promotion logits (B,64,4)
+        promo_logits = self.promo_head(enc)
 
-        # Flatten move logits for loss
-        move_logits_flat = move_logits.view(B, -1)
-
-        return move_logits_flat, promo_logits
-
+        return move_logits, promo_logits
 
 
 
@@ -261,9 +228,8 @@ class ChessFormer(nn.Module):
             x = (x + self.add_offsets[i]) * self.mul_offsets[i]
             x = layer(x)
 
-        print(x.shape)
-        move_logits, promo_logits = self.policy_head(x)
-        return move_logits, promo_logits
+        return self.policy_head(x)
+
 
 
 

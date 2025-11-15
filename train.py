@@ -163,6 +163,14 @@ if __name__ == "__main__":
         dataset_path="dataset.pt",
         batch_size=32,
         lr=1e-4,
-        epochs=3,
+        epochs=30,
         save_path="chessformer_policy.pt"
     )
+
+# ============================================================
+# ChessFormer Policy Training
+# ============================================================
+
+
+
+
